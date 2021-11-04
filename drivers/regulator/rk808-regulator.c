@@ -1594,6 +1594,17 @@ static struct platform_driver rk808_regulator_driver = {
 
 module_platform_driver(rk808_regulator_driver);
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+static struct platform_driver rk818_regulator_driver = {
+	.probe = rk808_regulator_probe,
+	.driver = {
+		.name = "rk818-regulator"
+	},
+};
+
+module_platform_driver(rk818_regulator_driver);
+#endif
+
 MODULE_DESCRIPTION("regulator driver for the RK808/RK816/RK818 series PMICs");
 MODULE_AUTHOR("Chris Zhong <zyw@rock-chips.com>");
 MODULE_AUTHOR("Zhang Qing <zhangqing@rock-chips.com>");

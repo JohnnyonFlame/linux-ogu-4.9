@@ -93,7 +93,7 @@ static bool rk817_is_volatile_reg(struct device *dev, unsigned int reg)
 
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 static noinline int psci_fn_smc(u64 function_id, u64 arg0, u64 arg1,
-					 u64 arg2)
+                                        u64 arg2)
 {
 	struct arm_smccc_res res;
 
@@ -107,11 +107,12 @@ static noinline int psci_fn_smc(u64 function_id, u64 arg0, u64 arg1,
 
 static void do_aml_poweroff(void)
 {
-	/* TODO: Add poweroff capability */
+       /* TODO: Add poweroff capability */
 	psci_fn_smc(0x82000042, 1, 0, 0);
 	psci_fn_smc(0x84000008, 0, 0, 0);
 }
 #endif
+
 
 static int rk808_shutdown(struct regmap *regmap)
 {
@@ -133,19 +134,6 @@ static int rk816_shutdown(struct regmap *regmap)
 	return ret;
 }
 
-#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
-static int rk817_shutdown(struct regmap *regmap)
-{
-	int ret;
-
-	ret = regmap_update_bits(regmap,
-				 RK817_SYS_CFG(3),
-				 0x1, 0x1);
-	do_aml_poweroff();
-	return ret;
-}
-#endif
-
 static int rk818_shutdown(struct regmap *regmap)
 {
 	int ret;
@@ -153,6 +141,7 @@ static int rk818_shutdown(struct regmap *regmap)
 	ret = regmap_update_bits(regmap,
 				 RK818_DEVCTRL_REG,
 				 DEV_OFF, DEV_OFF);
+	do_aml_poweroff();
 	return ret;
 }
 
@@ -304,6 +293,7 @@ static struct resource rtc_resources[] = {
 	}
 };
 
+#ifndef CONFIG_ARCH_MESON64_ODROID_COMMON
 static struct resource rk817_rtc_resources[] = {
 	{
 		.start  = RK817_IRQ_RTC_ALARM,
@@ -311,7 +301,7 @@ static struct resource rk817_rtc_resources[] = {
 		.flags  = IORESOURCE_IRQ,
 	}
 };
-
+#endif
 static struct resource rk816_rtc_resources[] = {
 	{
 		.start  = RK816_IRQ_RTC_ALARM,
@@ -333,6 +323,7 @@ static struct resource rk805_pwrkey_resources[] = {
 	},
 };
 
+#ifndef CONFIG_ARCH_MESON64_ODROID_COMMON
 static struct resource rk817_pwrkey_resources[] = {
 	{
 		.start  = RK817_IRQ_PWRON_RISE,
@@ -345,7 +336,7 @@ static struct resource rk817_pwrkey_resources[] = {
 		.flags  = IORESOURCE_IRQ,
 	},
 };
-
+#endif
 static struct resource rk816_pwrkey_resources[] = {
 	{
 		.start  = RK816_IRQ_PWRON_RISE,
@@ -587,8 +578,12 @@ static struct regmap_irq_chip rk816_battery_irq_chip = {
 };
 
 static const struct mfd_cell rk818s[] = {
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	{ .name = "rk818-regulator", },
+#else
 	{ .name = "rk808-clkout", },
 	{ .name = "rk808-regulator", },
+#endif
 	{ .name = "rk818-battery", .of_compatible = "rk818-battery", },
 	{ .name = "rk818-charger", },
 	{
@@ -599,6 +594,29 @@ static const struct mfd_cell rk818s[] = {
 };
 
 static const struct rk808_reg_data rk818_pre_init_reg[] = {
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	{ RK818_BUCK1_ON_VSEL_REG, 0x3f, 0x1B},//vdd_cpu_a : default 1.05
+	{ RK818_BUCK1_SLP_VSEL_REG, 0x3f, 0x1B},//vdd_cpu_a : default 1.05
+	{ RK818_BUCK2_ON_VSEL_REG, 0x3f, 0x0f},//vdd_ee : default 0.9
+	{ RK818_BUCK2_SLP_VSEL_REG, 0x3f, 0x0f},//vdd_ee : default 0.9
+	{ RK818_BUCK4_ON_VSEL_REG, 0x1f, 0x0c},//vdd_ao3v3 : default 3.3
+	{ RK818_BUCK4_SLP_VSEL_REG, 0x1f, 0x0c},//vdd_ao3v3 : default 3.3
+	{ RK818_LDO5_ON_VSEL_REG, 0x1f, 0x00},//vddio_ao1v8 : default 1.8
+	{ RK818_LDO5_SLP_VSEL_REG, 0x1f, 0x00},//vddio_ao1v8 : default 1.8
+	{ RK818_LDO6_ON_VSEL_REG, 0x1f, 0x11},//vdd_lcd : default 2.5
+	{ RK818_LDO6_SLP_VSEL_REG, 0x1f, 0x11},//vdd_lcd : default 2.5
+	{ RK818_LDO7_ON_VSEL_REG, 0x1f, 0x0a},//vddq_1v8 : default 1.8
+	{ RK818_LDO7_SLP_VSEL_REG, 0x1f, 0x0a},//vddq_1v8 : default 1.8
+	{ RK818_BOOST_LDO9_ON_VSEL_REG, 0x1f, 0x0f},//vddq_1v8 : default 1.8
+	{ RK818_BOOST_LDO9_SLP_VSEL_REG, 0x1f, 0x0f},//vddq_1v8 : default 1.8
+
+	{ RK818_H5V_EN_REG, REF_RDY_CTRL_MASK | H5V_EN_MASK,
+				REF_RDY_CTRL_ENABLE | H5V_EN_ENABLE },
+	{ RK818_BUCK4_CONFIG_REG, BUCK_ILMIN_MASK,  BUCK_ILMIN_400MA },
+	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
+	{ RK818_DCDC_EN_REG, BOOST_EN_MASK | SWITCH_EN_MASK | LDO9_EN_MASK,
+			LDO9_EN_ENABLE | BOOST_EN_ENABLE | SWITCH_EN_ENABLE },
+#else
 	{ RK818_H5V_EN_REG, REF_RDY_CTRL_ENABLE | H5V_EN_MASK,
 					REF_RDY_CTRL_ENABLE | H5V_EN_ENABLE },
 	{ RK818_DCDC_EN_REG, BOOST_EN_MASK | SWITCH_EN_MASK,
@@ -606,7 +624,8 @@ static const struct rk808_reg_data rk818_pre_init_reg[] = {
 	{ RK818_SLEEP_SET_OFF_REG1, OTG_SLP_SET_MASK, OTG_SLP_SET_OFF },
 	{ RK818_BUCK4_CONFIG_REG, BUCK_ILMIN_MASK,  BUCK_ILMIN_250MA },
 	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
-	{RK808_CLK32OUT_REG, CLK32KOUT2_FUNC_MASK, CLK32KOUT2_FUNC},
+	{ RK808_CLK32OUT_REG, CLK32KOUT2_FUNC_MASK, CLK32KOUT2_FUNC},
+#endif
 };
 
 static struct rk808_reg_data rk818_suspend_reg[] = {
@@ -826,6 +845,13 @@ static struct regmap_irq_chip rk817_irq_chip = {
 };
 
 static const struct mfd_cell rk817s[] = {
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+//	{ .name = "rk808-regulator",},
+	{
+		.name = "rk817-codec",
+		.of_compatible = "rockchip,rk817-codec",
+	},
+#else
 	{ .name = "rk808-clkout",},
 	{ .name = "rk808-regulator",},
 	{ .name = "rk817-battery", .of_compatible = "rk817,battery", },
@@ -844,17 +870,22 @@ static const struct mfd_cell rk817s[] = {
 		.name = "rk817-codec",
 		.of_compatible = "rockchip,rk817-codec",
 	},
+#endif
 };
 
 static const struct rk808_reg_data rk817_pre_init_reg[] = {
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
-	{RK817_BUCK1_ON_VSEL_REG, 0x7f, 0x2B},	/*vddcpu : 1.0375 (default)*/
-	{RK817_BUCK2_ON_VSEL_REG, 0x7f, 0x20},	/*vddee : 0.90 (default)*/
-#endif
+	{RK817_BUCK2_ON_VSEL_REG, 0x7f, 0x2B},	/*vddcpu_b : 1.0375 (default)*/
+	{RK817_BUCK3_ON_VSEL_REG, 0x7f, 0x20},	/*vcc_2v3 : 2.4 (default)*/
+
+	{RK817_POWER_EN_REG(0), 0xff, 0x66},
+	{RK817_POWER_EN_REG(1), 0xff, 0x88},
+#else
 	{RK817_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
 	{RK817_GPIO_INT_CFG, RK817_INT_POL_MSK, RK817_INT_POL_L},
 	{RK817_SYS_CFG(1), RK817_HOTDIE_TEMP_MSK | RK817_TSD_TEMP_MSK,
 					   RK817_HOTDIE_105 | RK817_TSD_140},
+#endif
 };
 
 static int (*pm_shutdown)(struct regmap *regmap);
@@ -1125,6 +1156,9 @@ static int rk817_reboot_notifier_handler(struct notifier_block *nb,
 		dev_err(dev, "reboot: force RK817_RST_FUNC_REG error!\n");
 	else
 		dev_info(dev, "reboot: force RK817_RST_FUNC_REG ok!\n");
+
+	ret = regmap_update_bits(data->rk808->regmap, RK817_SYS_CFG(3),
+				 0x4, 0x4);
 	return NOTIFY_OK;
 }
 
@@ -1198,40 +1232,16 @@ static int rk808_probe(struct i2c_client *client,
 	const struct regmap_irq_chip *irq_chip, *battery_irq_chip = NULL;
 	const struct mfd_cell *cell;
 	u8 on_source = 0, off_source = 0;
-	int msb, lsb, reg_num, cell_num;
+	int msb, lsb, reg_num=0, cell_num;
 	int ret, i, pm_off = 0;
 	unsigned int on, off;
 	u8 pmic_id_msb = RK808_ID_MSB, pmic_id_lsb = RK808_ID_LSB;
 	void (*of_property_prepare_fn)(struct rk808 *rk808,
 				       struct device *dev) = NULL;
 	int (*pinctrl_init)(struct device *dev, struct rk808 *rk808) = NULL;
-
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 	int irq_gpio;
-
-	irq_gpio = of_get_named_gpio(np, "interrupt_pin", 0);
-	if (irq_gpio < 0) {
-		dev_err(&client->dev, "No interrupt pin, no core IRQ\n");
-		return -EINVAL;
-	}
-	else dev_info(&client->dev, "Pmic irq gpio pin : %d\n", irq_gpio);
-
-	ret = gpio_request(irq_gpio, "pmic_irq");
-	if (ret)
-		dev_err(&client->dev,"interrupt_pin request failed(%d)\n", ret);
-
-	ret = gpio_direction_input(irq_gpio);
-	if (ret)
-		dev_err(&client->dev,"set interrupt_pin input failed(%d)\n", ret);
-
-	client->irq = gpio_to_irq(irq_gpio);
-	if (client->irq)
-		dev_info(&client->dev, "Pmic irq gpio irq number : %d\n", client->irq);
-#else
-	if (!client->irq) {
-		dev_err(&client->dev, "No interrupt support, no core IRQ\n");
-		return -EINVAL;
-	}
+	char sysfs_name[8];
 #endif
 	rk808 = devm_kzalloc(&client->dev, sizeof(*rk808), GFP_KERNEL);
 	if (!rk808)
@@ -1258,8 +1268,29 @@ static int rk808_probe(struct i2c_client *client,
 	}
 
 	rk808->variant = ((msb << 8) | lsb) & RK8XX_ID_MSK;
-	dev_info(&client->dev, "Pmic Chip id: 0x%lx\n", rk808->variant);
+	sprintf(sysfs_name, "rk%lx", rk808->variant);
+	dev_info(&client->dev, "Pmic Chip id: 0x%lx, sysfs: %s\n", rk808->variant,sysfs_name);
 
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	irq_gpio = of_get_named_gpio(np, "gpio-irq", 0);
+	if (irq_gpio < 0) {
+		dev_err(&client->dev, "No interrupt pin, no core IRQ\n");
+		return -EINVAL;
+	}
+	else dev_info(&client->dev, "Pmic irq gpio pin : %d\n", irq_gpio);
+
+	ret = gpio_request(irq_gpio, "pmic_irq");
+	if (ret)
+		dev_err(&client->dev,"interrupt_pin request failed(%d)\n", ret);
+
+	ret = gpio_direction_input(irq_gpio);
+	if (ret)
+		dev_err(&client->dev,"set interrupt_pin input failed(%d)\n", ret);
+
+	client->irq = gpio_to_irq(irq_gpio);
+	if (client->irq)
+		dev_info(&client->dev, "Pmic irq gpio irq number : %d\n", client->irq);
+#endif
 	/* set Chip platform init data*/
 	switch (rk808->variant) {
 	case RK818_ID:
@@ -1326,9 +1357,6 @@ static int rk808_probe(struct i2c_client *client,
 		regmap_config = &rk817_regmap_config;
 		irq_chip = &rk817_irq_chip;
 		pm_shutdown_prepare_fn = rk817_shutdown_prepare;
-#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
-		pm_shutdown_fn = rk817_shutdown;
-#endif
 		on_source = RK817_ON_SOURCE_REG;
 		off_source = RK817_OFF_SOURCE_REG;
 		of_property_prepare_fn = rk817_of_property_prepare;
@@ -1364,16 +1392,18 @@ static int rk808_probe(struct i2c_client *client,
 			 on, off);
 	}
 
-	for (i = 0; i < reg_num; i++) {
-		ret = regmap_update_bits(rk808->regmap,
-					 pre_init_reg[i].addr,
-					 pre_init_reg[i].mask,
-					 pre_init_reg[i].value);
-		if (ret) {
-			dev_err(&client->dev,
-				"0x%x write err\n",
-				pre_init_reg[i].addr);
-			return ret;
+	if(reg_num) {
+		for (i = 0; i < reg_num; i++) {
+			ret = regmap_update_bits(rk808->regmap,
+						 pre_init_reg[i].addr,
+						 pre_init_reg[i].mask,
+						 pre_init_reg[i].value);
+			if (ret) {
+				dev_err(&client->dev,
+					"0x%x write err\n",
+					pre_init_reg[i].addr);
+				return ret;
+			}
 		}
 	}
 
@@ -1391,7 +1421,7 @@ static int rk808_probe(struct i2c_client *client,
 	}
 
 	ret = regmap_add_irq_chip(rk808->regmap, client->irq,
-				  IRQF_ONESHOT | IRQF_SHARED, -1,
+				  IRQF_TRIGGER_LOW | IRQF_SHARED, -1,
 				  irq_chip, &rk808->irq_data);
 	if (ret) {
 		dev_err(&client->dev, "Failed to add irq_chip %d\n", ret);
@@ -1439,7 +1469,7 @@ static int rk808_probe(struct i2c_client *client,
 			pm_power_off = rk808_pm_power_off_dummy;
 	}
 
-	rk8xx_kobj = kobject_create_and_add("rk8xx", NULL);
+	rk8xx_kobj = kobject_create_and_add(sysfs_name, NULL);
 	if (rk8xx_kobj) {
 		ret = sysfs_create_file(rk8xx_kobj, &rk8xx_attrs.attr);
 		if (ret)
