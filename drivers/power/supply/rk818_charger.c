@@ -785,10 +785,6 @@ static void rk818_cg_dc_det_worker(struct work_struct *work)
 
 	rk_send_wakeup_key();
 	//rk818_cg_pr_info(cg);
-#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-	queue_delayed_work(cg->dc_charger_wq, &cg->dc_work,
-			   msecs_to_jiffies(1000));
-#endif
 }
 
 static u8 rk818_cg_decode_chrg_vol(struct rk818_charger *cg, u32 chrg_vol)
@@ -1165,11 +1161,6 @@ static int rk818_cg_init_dc(struct rk818_charger *cg)
 	else
 		cg->dc_charger = DC_TYPE_NONE_CHARGER;
 
-#if defined(CONFIG_ARCH_MESON64_ODROID_COMMON)
-	queue_delayed_work(cg->dc_charger_wq, &cg->dc_work,
-		   msecs_to_jiffies(3000));
-	goto has_no_irq;
-#endif
 	if (level)
 		irq_flags = IRQF_TRIGGER_LOW;
 	else
@@ -1184,8 +1175,6 @@ static int rk818_cg_init_dc(struct rk818_charger *cg)
 	}
 
 	enable_irq_wake(dc_det_irq);
-
-has_no_irq :
 	return 0;
 }
 
