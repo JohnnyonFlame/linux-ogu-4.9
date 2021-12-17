@@ -16,6 +16,23 @@
  */
 
 /{
+	gpio_keys: gou-gpio-keys {
+		compatible = "gpio-keys-polled";
+		poll-interval = <200>;
+		autorepeat;
+
+		button@0 {
+			label = "GPIO BTN-VOLUP";
+			linux,code = <KEY_VOLUMEUP>;
+                        gpios = <&gpio GPIOX_8 GPIO_ACTIVE_LOW>;
+		};
+		button@1 {
+			label = "GPIO BTN-VOLDN";
+			linux,code = <KEY_VOLUMEDOWN>;
+                        gpios = <&gpio GPIOX_9 GPIO_ACTIVE_LOW>;
+		};
+	};
+
 	joypad: gou_joypad {
                 compatible = "odroidgou-joypad";
 		status = "okay";
@@ -141,16 +158,6 @@
                         gpios = <&gpio GPIOX_7 GPIO_ACTIVE_LOW>;
                         label = "GPIO BTN-X";
                         linux,code = <BTN_NORTH>; // 0x133
-                };
-                sw9 {
-                        gpios = <&gpio GPIOX_8 GPIO_ACTIVE_LOW>;
-                        label = "GPIO BTN-VOLUP";
-                        linux,code = <KEY_VOLUMEUP>; // 115, 0x73
-                };
-                sw10 {
-                        gpios = <&gpio GPIOX_9 GPIO_ACTIVE_LOW>;
-                        label = "GPIO BTN-VOLDN";
-                        linux,code = <KEY_VOLUMEDOWN>; // 114, 0x72
                 };
                 sw11 {
                         gpios = <&gpio GPIOX_10 GPIO_ACTIVE_LOW>;

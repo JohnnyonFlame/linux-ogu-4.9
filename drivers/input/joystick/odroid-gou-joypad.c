@@ -98,6 +98,7 @@ struct bt_gpio {
 
 struct joypad {
 	struct device *dev;
+	struct input_polled_dev	*poll_dev;
 	int poll_interval;
 
 	/* report enable/disable */
@@ -764,14 +765,15 @@ static int joypad_input_setup(struct device *dev, struct joypad *joypad)
 	if (joypad->auto_repeat)
 		__set_bit(EV_REP, input->evbit);
 
-	joypad->dev = dev;
-
 	error = input_register_polled_device(poll_dev);
 	if (error) {
 		dev_err(dev, "unable to register polled device, err=%d\n",
 			error);
 		return error;
 	}
+	joypad->dev = dev;
+	joypad->poll_dev = poll_dev;
+
 	return 0;
 }
 
@@ -895,6 +897,11 @@ static int joypad_probe(struct platform_device *pdev)
 	return 0;
 }
 
+static void joypad_shutdown(struct platform_device *pdev)
+{
+	struct joypad *joypad = platform_get_drvdata(pdev);
+	input_unregister_polled_device(joypad->poll_dev);
+}
 /*----------------------------------------------------------------------------*/
 static const struct of_device_id joypad_of_match[] = {
 	{ .compatible = "odroidgou-joypad", },
@@ -906,6 +913,7 @@ MODULE_DEVICE_TABLE(of, joypad_of_match);
 /*----------------------------------------------------------------------------*/
 static struct platform_driver joypad_driver = {
 	.probe = joypad_probe,
+	.shutdown = joypad_shutdown,
 	.driver = {
 		.name = DRV_NAME,
 		.of_match_table = of_match_ptr(joypad_of_match),
