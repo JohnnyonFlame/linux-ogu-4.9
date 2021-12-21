@@ -30,17 +30,9 @@
 		regulator-min-microvolt = <3800000>;
 		regulator-max-microvolt = <3800000>;
 	};
-	vcc_2v3: vcc_2v3 {
-		compatible = "regulator-fixed";
-		regulator-name = "vcc_2v3";
-		regulator-always-on;
-		regulator-min-microvolt = <2400000>;
-		regulator-max-microvolt = <2400000>;
-	};
-
 	codec_clk: codec-clk {
 		compatible = "fixed-clock";
-		clock-frequency = <16000000>;
+		clock-frequency = <12288000>;
 		clock-output-names = "codec_clk";
 		#clock-cells = <0>;
 	};
@@ -56,10 +48,11 @@
 		compatible = "rockchip,rk818";
 		reg = <0x1c>;
 		status = "okay";
-
 		gpio-irq = <&gpio_ao GPIOAO_7 GPIO_ACTIVE_LOW>;
 		rockchip,system-power-controller;
-		wakeup-source;
+		//wakeup-source;
+		clock-output-names = "rk818-clkout1", "wifibt_32kin";
+		#clock-cells = <1>;
 
 		vcc1-supply = <&vcc_sys_818>;
 		vcc2-supply = <&vcc_sys_818>;
@@ -161,9 +154,9 @@
 				};
 			};
 
-			vcc_lcd: LDO_REG6 {
+			LDO_REG6 {
 				regulator-boot-off;
-				regulator-name = "vcc_lcd";
+				regulator-name = "rk818_LDO6";
 				regulator-state-mem {
 					regulator-off-in-suspend;
 					regulator-suspend-microvolt = <2500000>;
@@ -218,13 +211,12 @@
 				regulator-min-microvolt = <5000000>;
 				regulator-max-microvolt = <5000000>;
 				regulator-state-mem {
-					regulator-on-in-suspend;
-					regulator-suspend-microvolt = <5000000>;
+					regulator-off-in-suspend;
 				};
 			};
 
-			otg_switch: OTG_SWITCH {
-				regulator-name = "otg_switch";
+			rk818_otg_switch: OTG_SWITCH {
+				regulator-name = "rk818_otg_switch";
 			};
 		};
 		battery {
@@ -249,14 +241,30 @@
 			monitor_sec = <5>;
 			virtual_power = <0>;
 			power_dc2otg = <1>;
+			otg_switch-supply = <&rk818_otg_switch>;
+			otg5v_suspend_enable = <0>;
 			dc_det_gpio = <&gpio_ao GPIOAO_8 GPIO_ACTIVE_LOW>;
 		};
 	};
+};
+
+&i2c3 {
+	status = "okay";
+	pinctrl-names="default";
+	pinctrl-0=<&i2c3_master_pins2>;
+	clock-frequency = <400000>;
+
 	rk817: pmic@20 {
 		compatible = "rockchip,rk817";
 		reg = <0x20>;
-		status = "disabled";
-		gpio-irq = <&gpio_ao GPIOAO_4 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		gpio-irq = <&gpio_ao GPIOAO_5 GPIO_ACTIVE_LOW>;
+		pinctrl-names = "default", "pmic-sleep",
+				"pmic-power-off", "pmic-reset";
+		pinctrl-0 = <&rk817_slppin_null>;
+		pinctrl-1 = <&rk817_slppin_slp>;
+		pinctrl-2 = <&rk817_slppin_pwrdn>;
+		pinctrl-3 = <&rk817_slppin_rst>;
 
 		//rockchip,system-power-controller;
 		wakeup-source;
@@ -275,7 +283,181 @@
 		vcc6-supply = <&vcc_sys_817>;
 		vcc7-supply = <&vcc_sys_817>;
 		vcc8-supply = <&vcc_sys_817>;
-		vcc9-supply = <&vcc_sys_817>;
+		vcc9-supply = <&rk817_boost>;
+
+		pinctrl_rk8xx: pinctrl_rk8xx {
+			gpio-controller;
+			#gpio-cells = <2>;
+
+			rk817_ts_gpio1: rk817_ts_gpio1 {
+				pins = "gpio_ts";
+				function = "pin_fun1";
+				/* output-low; */
+				/* input-enable; */
+			};
+
+			rk817_gt_gpio2: rk817_gt_gpio2 {
+				pins = "gpio_gt";
+				function = "pin_fun1";
+			};
+
+			rk817_pin_ts: rk817_pin_ts {
+				pins = "gpio_ts";
+				function = "pin_fun0";
+			};
+
+			rk817_pin_gt: rk817_pin_gt {
+				pins = "gpio_gt";
+				function = "pin_fun0";
+			};
+
+			rk817_slppin_null: rk817_slppin_null {
+				pins = "gpio_slp";
+				function = "pin_fun0";
+			};
+
+			rk817_slppin_slp: rk817_slppin_slp {
+				pins = "gpio_slp";
+				function = "pin_fun1";
+			};
+
+			rk817_slppin_pwrdn: rk817_slppin_pwrdn {
+				pins = "gpio_slp";
+				function = "pin_fun2";
+			};
+
+			rk817_slppin_rst: rk817_slppin_rst {
+				pins = "gpio_slp";
+				function = "pin_fun3";
+			};
+		};
+
+		regulators {
+			/* Not Used */
+			DCDC_REG1 {
+				regulator-boot-off;
+				regulator-name = "rk817_BUCK1";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			vddcpu_b: DCDC_REG2 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <750000>;
+				regulator-max-microvolt = <1450000>;
+				regulator-ramp-delay = <6001>;
+				regulator-initial-mode = <0x2>;
+				regulator-name = "vdd_cpu_b";
+				regulator-state-mem {
+					regulator-on-in-suspend;
+					regulator-suspend-microvolt = <1000000>;
+				};
+			};
+			vcc_2v3: DCDC_REG3 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-initial-mode = <0x2>;
+				regulator-name = "vcc_2v3";
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+			DCDC_REG4 {
+				regulator-boot-off;
+				regulator-name = "rk817_BUCK4";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG1 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO1";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG2 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO2";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG3 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO3";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			vdd_codec: LDO_REG4 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <3300000>;
+				regulator-max-microvolt = <3300000>;
+				regulator-name = "vdd_codec";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG5 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO5";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG6 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO6";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG7 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO7";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			vcc_lcd: LDO_REG8 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <3000000>;
+				regulator-max-microvolt = <3000000>;
+				regulator-name = "vcc_lcd";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			LDO_REG9 {
+				regulator-boot-off;
+				regulator-name = "rk817_LDO9";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			rk817_boost: BOOST {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-min-microvolt = <5000000>;
+				regulator-max-microvolt = <5400000>;
+				regulator-name = "boost";
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			OTG_SWITCH {
+				regulator-name = "rk817_otg_switch";
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+		};
 
 		rk817_codec: codec {
 			#sound-dai-cells = <0>;

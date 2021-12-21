@@ -91,6 +91,13 @@ static bool rk817_is_volatile_reg(struct device *dev, unsigned int reg)
 	return true;
 }
 
+static int (*pm_shutdown)(struct regmap *regmap);
+static int (*pm_shutdown_prepare)(struct rk808 *rk808);
+static struct i2c_client *rk808_i2c_client;
+static struct rk808_reg_data *suspend_reg, *resume_reg;
+static int suspend_reg_num, resume_reg_num;
+
+
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
 static noinline int psci_fn_smc(u64 function_id, u64 arg0, u64 arg1,
                                         u64 arg2)
@@ -293,15 +300,6 @@ static struct resource rtc_resources[] = {
 	}
 };
 
-#ifndef CONFIG_ARCH_MESON64_ODROID_COMMON
-static struct resource rk817_rtc_resources[] = {
-	{
-		.start  = RK817_IRQ_RTC_ALARM,
-		.end    = RK817_IRQ_RTC_ALARM,
-		.flags  = IORESOURCE_IRQ,
-	}
-};
-#endif
 static struct resource rk816_rtc_resources[] = {
 	{
 		.start  = RK816_IRQ_RTC_ALARM,
@@ -323,7 +321,7 @@ static struct resource rk805_pwrkey_resources[] = {
 	},
 };
 
-#ifndef CONFIG_ARCH_MESON64_ODROID_COMMON
+
 static struct resource rk817_pwrkey_resources[] = {
 	{
 		.start  = RK817_IRQ_PWRON_RISE,
@@ -336,7 +334,7 @@ static struct resource rk817_pwrkey_resources[] = {
 		.flags  = IORESOURCE_IRQ,
 	},
 };
-#endif
+
 static struct resource rk816_pwrkey_resources[] = {
 	{
 		.start  = RK816_IRQ_PWRON_RISE,
@@ -595,10 +593,10 @@ static const struct mfd_cell rk818s[] = {
 
 static const struct rk808_reg_data rk818_pre_init_reg[] = {
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
-	{ RK818_BUCK1_ON_VSEL_REG, 0x3f, 0x1B},//vdd_cpu_a : default 1.05
-	{ RK818_BUCK1_SLP_VSEL_REG, 0x3f, 0x1B},//vdd_cpu_a : default 1.05
-	{ RK818_BUCK2_ON_VSEL_REG, 0x3f, 0x0f},//vdd_ee : default 0.9
-	{ RK818_BUCK2_SLP_VSEL_REG, 0x3f, 0x0f},//vdd_ee : default 0.9
+	{ RK818_BUCK1_ON_VSEL_REG, 0x3f, 0x1a},//vdd_cpu_a : default 1.0375
+	{ RK818_BUCK1_SLP_VSEL_REG, 0x3f, 0x1a},//vdd_cpu_a : default 1.0375
+	{ RK818_BUCK2_ON_VSEL_REG, 0x3f, 0x0d},//vdd_ee : default 0.875
+	{ RK818_BUCK2_SLP_VSEL_REG, 0x3f, 0x0d},//vdd_ee : default 0.875
 	{ RK818_BUCK4_ON_VSEL_REG, 0x1f, 0x0c},//vdd_ao3v3 : default 3.3
 	{ RK818_BUCK4_SLP_VSEL_REG, 0x1f, 0x0c},//vdd_ao3v3 : default 3.3
 	{ RK818_LDO5_ON_VSEL_REG, 0x1f, 0x00},//vddio_ao1v8 : default 1.8
@@ -616,6 +614,9 @@ static const struct rk808_reg_data rk818_pre_init_reg[] = {
 	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
 	{ RK818_DCDC_EN_REG, BOOST_EN_MASK | SWITCH_EN_MASK | LDO9_EN_MASK,
 			LDO9_EN_ENABLE | BOOST_EN_ENABLE | SWITCH_EN_ENABLE },
+	{ RK818_SLEEP_SET_OFF_REG1, OTG_SLP_SET_MASK, OTG_SLP_SET_OFF },
+	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
+	{ RK818_IO_POL_REG, BIT(0), 0},
 #else
 	{ RK818_H5V_EN_REG, REF_RDY_CTRL_ENABLE | H5V_EN_MASK,
 					REF_RDY_CTRL_ENABLE | H5V_EN_ENABLE },
@@ -846,7 +847,12 @@ static struct regmap_irq_chip rk817_irq_chip = {
 
 static const struct mfd_cell rk817s[] = {
 #ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
-//	{ .name = "rk808-regulator",},
+	{ .name = "rk808-regulator",},
+	{
+		.name = "rk8xx-pwrkey",
+		.num_resources = ARRAY_SIZE(rk817_pwrkey_resources),
+		.resources = &rk817_pwrkey_resources[0],
+	},
 	{
 		.name = "rk817-codec",
 		.of_compatible = "rockchip,rk817-codec",
@@ -880,6 +886,8 @@ static const struct rk808_reg_data rk817_pre_init_reg[] = {
 
 	{RK817_POWER_EN_REG(0), 0xff, 0x66},
 	{RK817_POWER_EN_REG(1), 0xff, 0x88},
+	{RK817_SYS_CFG(1), RK817_HOTDIE_TEMP_MSK | RK817_TSD_TEMP_MSK,
+					   RK817_HOTDIE_105 | RK817_TSD_140},
 #else
 	{RK817_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
 	{RK817_GPIO_INT_CFG, RK817_INT_POL_MSK, RK817_INT_POL_L},
@@ -887,12 +895,6 @@ static const struct rk808_reg_data rk817_pre_init_reg[] = {
 					   RK817_HOTDIE_105 | RK817_TSD_140},
 #endif
 };
-
-static int (*pm_shutdown)(struct regmap *regmap);
-static int (*pm_shutdown_prepare)(struct rk808 *rk808);
-static struct i2c_client *rk808_i2c_client;
-static struct rk808_reg_data *suspend_reg, *resume_reg;
-static int suspend_reg_num, resume_reg_num;
 
 static void rk808_device_shutdown_prepare(void)
 {
@@ -1156,9 +1158,6 @@ static int rk817_reboot_notifier_handler(struct notifier_block *nb,
 		dev_err(dev, "reboot: force RK817_RST_FUNC_REG error!\n");
 	else
 		dev_info(dev, "reboot: force RK817_RST_FUNC_REG ok!\n");
-
-	ret = regmap_update_bits(data->rk808->regmap, RK817_SYS_CFG(3),
-				 0x4, 0x4);
 	return NOTIFY_OK;
 }
 
@@ -1168,7 +1167,7 @@ static void rk817_of_property_prepare(struct rk808 *rk808, struct device *dev)
 	int ret, func, msk, val;
 	struct device_node *np = dev->of_node;
 	struct regmap *regmap = rk808->regmap;
-
+return;
 	ret = of_property_read_u32_index(np, "fb-inner-reg-idxs", 0, &inner);
 	if (!ret && inner == RK817_ID_DCDC3)
 		regmap_update_bits(regmap, RK817_POWER_CONFIG,
@@ -1290,24 +1289,10 @@ static int rk808_probe(struct i2c_client *client,
 	client->irq = gpio_to_irq(irq_gpio);
 	if (client->irq)
 		dev_info(&client->dev, "Pmic irq gpio irq number : %d\n", client->irq);
+
 #endif
 	/* set Chip platform init data*/
 	switch (rk808->variant) {
-	case RK818_ID:
-		cell = rk818s;
-		cell_num = ARRAY_SIZE(rk818s);
-		pre_init_reg = rk818_pre_init_reg;
-		reg_num = ARRAY_SIZE(rk818_pre_init_reg);
-		regmap_config = &rk818_regmap_config;
-		irq_chip = &rk818_irq_chip;
-		pm_shutdown_fn = rk818_shutdown;
-		on_source = RK818_ON_SOURCE_REG;
-		off_source = RK818_OFF_SOURCE_REG;
-		suspend_reg = rk818_suspend_reg;
-		suspend_reg_num = ARRAY_SIZE(rk818_suspend_reg);
-		resume_reg = rk818_resume_reg;
-		resume_reg_num = ARRAY_SIZE(rk818_resume_reg);
-		break;
 	case RK816_ID:
 		cell = rk816s;
 		cell_num = ARRAY_SIZE(rk816s);
@@ -1347,6 +1332,21 @@ static int rk808_probe(struct i2c_client *client,
 		suspend_reg_num = ARRAY_SIZE(rk805_suspend_reg);
 		resume_reg = rk805_resume_reg;
 		resume_reg_num = ARRAY_SIZE(rk805_resume_reg);
+		break;
+	case RK818_ID:
+		cell = rk818s;
+		cell_num = ARRAY_SIZE(rk818s);
+		pre_init_reg = rk818_pre_init_reg;
+		reg_num = ARRAY_SIZE(rk818_pre_init_reg);
+		regmap_config = &rk818_regmap_config;
+		irq_chip = &rk818_irq_chip;
+		pm_shutdown_fn = rk818_shutdown;
+		on_source = RK818_ON_SOURCE_REG;
+		off_source = RK818_OFF_SOURCE_REG;
+		suspend_reg = rk818_suspend_reg;
+		suspend_reg_num = ARRAY_SIZE(rk818_suspend_reg);
+		resume_reg = rk818_resume_reg;
+		resume_reg_num = ARRAY_SIZE(rk818_resume_reg);
 		break;
 	case RK809_ID:
 	case RK817_ID:
@@ -1420,19 +1420,18 @@ static int rk808_probe(struct i2c_client *client,
 			return ret;
 	}
 
-	ret = regmap_add_irq_chip(rk808->regmap, client->irq,
-				  IRQF_TRIGGER_LOW | IRQF_SHARED, -1,
-				  irq_chip, &rk808->irq_data);
+	ret = regmap_add_irq_chip(rk808->regmap,
+				client->irq, IRQF_ONESHOT | IRQF_SHARED, -1,
+				irq_chip, &rk808->irq_data);
 	if (ret) {
 		dev_err(&client->dev, "Failed to add irq_chip %d\n", ret);
 		return ret;
 	}
 
 	if (battery_irq_chip) {
-		ret = regmap_add_irq_chip(rk808->regmap, client->irq,
-					  IRQF_ONESHOT | IRQF_SHARED, -1,
-					  battery_irq_chip,
-					  &rk808->battery_irq_data);
+		ret = regmap_add_irq_chip(rk808->regmap,
+					client->irq, IRQF_ONESHOT | IRQF_SHARED, -1,
+					irq_chip, &rk808->battery_irq_data);
 		if (ret) {
 			dev_err(&client->dev,
 				"Failed to add batterry irq_chip %d\n", ret);
@@ -1483,6 +1482,27 @@ err_irq:
 	if (battery_irq_chip)
 		regmap_del_irq_chip(client->irq, rk808->battery_irq_data);
 	return ret;
+}
+
+static void rk8xx_shutdown(struct i2c_client *client)
+{
+	struct rk808 *rk808 = i2c_get_clientdata(client);
+	dev_info(&client->dev, "%s[%d]Chip id: 0x%lx\n",__func__,__LINE__, rk808->variant);
+
+	switch (rk808->variant) {
+	case RK817_ID:
+//		regmap_write(rk808->regmap, RK817_POWER_EN_REG(0), value | 0xf0);
+		regmap_write(rk808->regmap, RK817_POWER_EN_REG(1), 0x00 | 0xf0);
+		regmap_write(rk808->regmap, RK817_POWER_EN_REG(2), 0x00 | 0xf0);
+		regmap_write(rk808->regmap, RK817_POWER_EN_REG(3), 0x00 | 0xf0);
+
+		break;
+	default:
+		dev_err(&client->dev, "unsupported RK8XX ID 0x%lx\n",
+			rk808->variant);
+	}
+
+	return;
 }
 
 static int rk808_suspend(struct device *dev)
@@ -1615,6 +1635,7 @@ static struct i2c_driver rk808_i2c_driver = {
 		.pm = &rk808_pm_ops,
 	},
 	.probe    = rk808_probe,
+	.shutdown = rk8xx_shutdown,
 	.remove   = rk808_remove,
 	.id_table = rk808_ids,
 };

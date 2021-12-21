@@ -247,6 +247,7 @@
 		compatible = "amlogic, g12a-sound-card";
 		aml-audio-card,name = "AML-AUGESOUND";
 		aml-audio-card,effect = <&audio_effect>;
+		aml-audio-card,hp-det-gpio = <&gpio_ao GPIOAO_9 GPIO_ACTIVE_LOW>;
 
 		aml-audio-card,dai-link@0 {
 			format = "i2s";
@@ -263,19 +264,7 @@
 				system-clock-frequency = <12288000>;
 			};
 			codec {
-				sound-dai = <&amlogic_codec>;
-			};
-		};
-		
-		aml-audio-card,dai-link@1 {
-			mclk-fs = <128>;
-			continuous-clock;
-			cpu {
-				sound-dai = <&aml_spdif_b>;
-				system-clock-frequency = <6144000>;
-			};
-			codec {
-				sound-dai = <&dummy_codec>;
+				sound-dai = <&rk817_codec>;
 			};
 		};
 	};
@@ -469,6 +458,7 @@
 		pinctrl-names = "tdm_pins";
 		pinctrl-0 = <&tdmb_mclk &tdmout_b &tdmin_b>;
 		mclk_pad = <0>;  /* 0: mclk_0; 1: mclk_1 */
+		i2s2hdmi = <1>;
 	};
 	aml_spdif: spdif {
 		compatible = "amlogic, g12a-snd-spdif-a";
@@ -495,7 +485,7 @@
 				&clkaudio CLKID_AUDIO_SPDIFOUTB_CTRL>;
 		clock-names = "sysclk",
 				"gate_spdifout", "clk_spdifout";
-		status = "okay";
+		status = "disabled";
 	};
 	aml_loopback: loopback {
 		compatible = "amlogic, snd-loopback";
@@ -665,13 +655,24 @@
 	};
 };
 
+&usb2_phy_v2 {
+	status = "okay";
+	portnum = <2>;
+};
+
 &dwc3 {
 	status = "okay";
 };
 
-&usb2_phy_v2 {
+&dwc2_a {
 	status = "okay";
-	portnum = <2>;
+	/** 0: normal, 1: otg+dwc3 host only, 2: otg+dwc3 device only*/
+	controller-type = <3>;
+};
+
+&pcie_A {
+	reset-gpio = <&gpio GPIOX_7 GPIO_ACTIVE_HIGH>;
+	status = "disabled";
 };
 
 &usb3_phy_v2 {
