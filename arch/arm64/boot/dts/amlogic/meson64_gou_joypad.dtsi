@@ -36,6 +36,11 @@
 	joypad: gou_joypad {
                 compatible = "odroidgou-joypad";
 		status = "okay";
+
+                joypad-name = "GO-Ultra Gamepad";
+                joypad-product = <0x1000>;
+                joypad-revision = <0x0100>;
+
                 /*
                   - odroidgou-joypad sysfs list -
 		   * for poll device interval(ms)
@@ -65,7 +70,7 @@
 		io-channel-names = "key-RY", "key-RX", "key-LY", "key-LX";
 
 		/* adc calculate scale */
-		button-adc-scale = <2>;
+		button-adc-scale = <4>;
 
 		/* adc deadzone range  */
 		button-adc-deadzone = <64>;
@@ -82,17 +87,17 @@
 		  p = positive direction, n = negative direction
 		  report value = (real_adc_data * tuning_value) / 100
 		*/
-		abs_x-p-tuning = <180>;
-		abs_x-n-tuning = <180>;
+		abs_x-p-tuning = <350>;
+		abs_x-n-tuning = <350>;
 
-		abs_y-p-tuning = <180>;
-		abs_y-n-tuning = <170>;
+		abs_y-p-tuning = <350>;
+		abs_y-n-tuning = <350>;
 
-		abs_rx-p-tuning = <180>;
-		abs_rx-n-tuning = <180>;
+		abs_rx-p-tuning = <350>;
+		abs_rx-n-tuning = <350>;
 
-		abs_ry-p-tuning = <180>;
-		abs_ry-n-tuning = <170>;
+		abs_ry-p-tuning = <350>;
+		abs_ry-n-tuning = <350>;
 
 		/* poll device interval (ms), adc read interval */
 		poll-interval = <10>;
