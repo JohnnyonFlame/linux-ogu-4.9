@@ -612,11 +612,10 @@ static const struct rk808_reg_data rk818_pre_init_reg[] = {
 				REF_RDY_CTRL_ENABLE | H5V_EN_ENABLE },
 	{ RK818_BUCK4_CONFIG_REG, BUCK_ILMIN_MASK,  BUCK_ILMIN_400MA },
 	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
-	{ RK818_DCDC_EN_REG, BOOST_EN_MASK | SWITCH_EN_MASK | LDO9_EN_MASK,
-			LDO9_EN_ENABLE | BOOST_EN_ENABLE | SWITCH_EN_ENABLE },
+	{ RK818_DCDC_EN_REG, SWITCH_EN_MASK | LDO9_EN_MASK,
+			LDO9_EN_ENABLE | SWITCH_EN_ENABLE },
 	{ RK818_SLEEP_SET_OFF_REG1, OTG_SLP_SET_MASK, OTG_SLP_SET_OFF },
 	{ RK808_RTC_CTRL_REG, RTC_STOP, RTC_STOP},
-	{ RK818_IO_POL_REG, BIT(0), 0},
 #else
 	{ RK818_H5V_EN_REG, REF_RDY_CTRL_ENABLE | H5V_EN_MASK,
 					REF_RDY_CTRL_ENABLE | H5V_EN_ENABLE },
@@ -642,6 +641,41 @@ static struct rk808_reg_data rk818_resume_reg[] = {
 };
 
 static const struct regmap_irq rk818_irqs[] = {
+#ifdef CONFIG_ARCH_MESON64_ODROID_COMMON
+	/* INT_STS2 */
+	[RK818_IRQ_PLUG_IN] = {
+		.mask = PLUG_IN_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_PLUG_OUT] = {
+		.mask = PLUG_OUT_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_CHG_OK] = {
+		.mask = CHGOK_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_CHG_TE] = {
+		.mask = CHGTE_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_CHG_TS1] = {
+		.mask = CHGTS1_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_TS2] = {
+		.mask = TS2_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_CHG_CVTLIM] = {
+		.mask = CHG_CVTLIM_MASK,
+		.reg_offset = 1,
+	},
+	[RK818_IRQ_DISCHG_ILIM] = {
+		.mask = DISCHG_ILIM_MASK,
+		.reg_offset = 1,
+	},
+#else
 	/* INT_STS */
 	[RK818_IRQ_VOUT_LO] = {
 		.mask = VOUT_LO_MASK,
@@ -708,6 +742,7 @@ static const struct regmap_irq rk818_irqs[] = {
 		.mask = DISCHG_ILIM_MASK,
 		.reg_offset = 1,
 	},
+#endif
 };
 
 static struct regmap_irq_chip rk818_irq_chip = {

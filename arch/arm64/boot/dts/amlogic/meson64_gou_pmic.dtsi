@@ -221,18 +221,19 @@
 		};
 		battery {
 			compatible = "rk818-battery";
-			ocv_table = <3400 3675 3689 3716 3740 3756 3768 3780
-				3793 3807 3827 3853 3896 3937 3974 4007 4066
-				4110 4161 4217 4250>;
+			ocv_table = <
+				3470 3599 3671 3701 3728 3746 3762
+				3772 3781 3792 3816 3836 3866 3910
+				3942 3971 4002 4050 4088 4132 4200>;
 			design_capacity = <4000>;
 			design_qmax = <4100>;
 			bat_res = <180>;
-			max_input_current = <1500>;
-			max_chrg_current = <2000>;
-			max_chrg_voltage = <4500>;
+			max_input_current = <2000>;
+			max_chrg_current = <1500>;
+			max_chrg_voltage = <4250>;
 			sleep_enter_current = <300>;
 			sleep_exit_current = <300>;
-			power_off_thresd = <3500>;
+			power_off_thresd = <3470>;
 			zero_algorithm_vol = <3700>;
 			fb_temperature = <105>;
 			sample_res = <10>;
@@ -244,6 +245,7 @@
 			otg_switch-supply = <&rk818_otg_switch>;
 			otg5v_suspend_enable = <0>;
 			dc_det_gpio = <&gpio_ao GPIOAO_8 GPIO_ACTIVE_LOW>;
+			chg_led_gpio = <&gpio_ao GPIOAO_6 GPIO_ACTIVE_HIGH>;
 		};
 	};
 };
