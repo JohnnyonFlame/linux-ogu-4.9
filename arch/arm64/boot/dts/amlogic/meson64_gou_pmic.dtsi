@@ -233,7 +233,7 @@
 			max_chrg_voltage = <4250>;
 			sleep_enter_current = <300>;
 			sleep_exit_current = <300>;
-			power_off_thresd = <3470>;
+			power_off_thresd = <3450>;
 			zero_algorithm_vol = <3700>;
 			fb_temperature = <105>;
 			sample_res = <10>;

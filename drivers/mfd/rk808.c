@@ -118,6 +118,7 @@ static void do_aml_poweroff(void)
 	psci_fn_smc(0x82000042, 1, 0, 0);
 	psci_fn_smc(0x84000008, 0, 0, 0);
 }
+
 #endif
 
 
@@ -145,10 +146,17 @@ static int rk818_shutdown(struct regmap *regmap)
 {
 	int ret;
 
-	ret = regmap_update_bits(regmap,
-				 RK818_DEVCTRL_REG,
-				 DEV_OFF, DEV_OFF);
-	do_aml_poweroff();
+	if (system_state == SYSTEM_POWER_OFF) {
+		ret = regmap_update_bits(regmap,
+					 RK818_DEVCTRL_REG,
+					 DEV_OFF, DEV_OFF);
+	}
+	else {
+		do_aml_poweroff();
+		ret = regmap_update_bits(regmap,
+					 RK818_DEVCTRL_REG,
+					 DEV_OFF_RST, DEV_OFF_RST);
+	}
 	return ret;
 }
 
@@ -976,20 +984,18 @@ static void rk808_syscore_shutdown(void)
 	 * been stopped or PMIC may not be able to get i2c transfer while
 	 * there are too many devices are competiting.
 	 */
-	if (system_state == SYSTEM_POWER_OFF) {
-		/* power off supplies ! */
-		if (pm_shutdown) {
-			dev_info(&rk808_i2c_client->dev, "System power off\n");
-			ret = pm_shutdown(rk808->regmap);
-			if (ret)
-				dev_err(&rk808_i2c_client->dev,
-					"System power off error!\n");
-			mdelay(10);
-			dev_info(&rk808_i2c_client->dev,
-				 "Cpu should never reach here, stop!\n");
-			while (1)
-				;
-		}
+	/* power off supplies ! */
+	if (pm_shutdown) {
+		dev_info(&rk808_i2c_client->dev, "System power off\n");
+		ret = pm_shutdown(rk808->regmap);
+		if (ret)
+			dev_err(&rk808_i2c_client->dev,
+				"System power off error!\n");
+		mdelay(10);
+		dev_info(&rk808_i2c_client->dev,
+			 "Cpu should never reach here, stop!\n");
+		while (1)
+			;
 	}
 }
 
@@ -1522,19 +1528,20 @@ err_irq:
 static void rk8xx_shutdown(struct i2c_client *client)
 {
 	struct rk808 *rk808 = i2c_get_clientdata(client);
-	dev_info(&client->dev, "%s[%d]Chip id: 0x%lx\n",__func__,__LINE__, rk808->variant);
+	
+	if (system_state == SYSTEM_POWER_OFF) {
+		dev_info(&client->dev, "%s[%d]Chip id: 0x%lx\n",__func__,__LINE__, rk808->variant);
 
-	switch (rk808->variant) {
-	case RK817_ID:
-//		regmap_write(rk808->regmap, RK817_POWER_EN_REG(0), value | 0xf0);
-		regmap_write(rk808->regmap, RK817_POWER_EN_REG(1), 0x00 | 0xf0);
-		regmap_write(rk808->regmap, RK817_POWER_EN_REG(2), 0x00 | 0xf0);
-		regmap_write(rk808->regmap, RK817_POWER_EN_REG(3), 0x00 | 0xf0);
-
-		break;
-	default:
-		dev_err(&client->dev, "unsupported RK8XX ID 0x%lx\n",
-			rk808->variant);
+		switch (rk808->variant) {
+		case RK817_ID:
+			regmap_write(rk808->regmap, RK817_POWER_EN_REG(1), 0x00 | 0xf0);
+			regmap_write(rk808->regmap, RK817_POWER_EN_REG(2), 0x00 | 0xf0);
+			regmap_write(rk808->regmap, RK817_POWER_EN_REG(3), 0x00 | 0xf0);
+			break;
+		default:
+			dev_info(&client->dev, "unsupported RK8XX ID 0x%lx\n",
+				rk808->variant);
+		}
 	}
 
 	return;
