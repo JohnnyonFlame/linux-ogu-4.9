@@ -93,6 +93,13 @@
 			size = <0x0 0x8000000>;
 			alignment = <0x0 0x400000>;
 		};
+		ion_fb_reserved:linux,ion-fb {
+			compatible = "amlogic, ion-fb-mem";
+			reusable;
+
+			size = <0x0 0x1c00000>;
+			alignment = <0x0 0x400000>;
+		};
 
 		/*di CMA pool */
 		di_cma_reserved:linux,di_cma {

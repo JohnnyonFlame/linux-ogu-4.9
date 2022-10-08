@@ -232,4 +232,30 @@ config ARCH_ZYNQMP
 	help
 	  This enables support for Xilinx ZynqMP Family
 
+config ARCH_MESON64_ODROID_COMMON
+	bool "Hardkkernel's ODROID Single Board Computer Common"
+	help
+	  Common definitions for AMLogic, Inc.
+	  based boards from Hardkernel,
+	  such as the ODroid C4 or ODroid N2
+	  Single Board Computers.
+
+config ARCH_MESON64_ODROIDC4
+	bool "Hardkkernel's ODROID-C4 Single Board Computer"
+	select ARCH_MESON64_ODROID_COMMON
+	select AMLOGIC_POWER
+	help
+	  This enables support for the board ODROID-C4
+	  of Hardkernel which is based on
+	  ARMv8 SoC of
+	  AMLogic, Inc.
+
+config ARCH_MESON64_ODROIDN2
+	bool "Hardkkernel's ODROID-N2 Single Board Computer"
+	select ARCH_MESON64_ODROID_COMMON
+	select DRM_BIFROST if DRM_MESON
+	help
+	  This enables support for the board ODROID-N2 of Hardkernel
+	  which is based on ARMv8 SoC of AMLogic, Inc.
+
 endmenu

@@ -142,6 +142,17 @@ static int rk816_shutdown(struct regmap *regmap)
 	return ret;
 }
 
+static int rk817_shutdown(struct regmap *regmap)
+{
+	int ret;
+
+	ret = regmap_update_bits(regmap,
+				 RK817_SYS_CFG(3),
+				 0x1, 0x1);
+	do_aml_poweroff();
+	return ret;
+}
+
 static int rk818_shutdown(struct regmap *regmap)
 {
 	int ret;
@@ -304,6 +315,14 @@ static struct resource rtc_resources[] = {
 	{
 		.start  = RK808_IRQ_RTC_ALARM,
 		.end    = RK808_IRQ_RTC_ALARM,
+		.flags  = IORESOURCE_IRQ,
+	}
+};
+
+static struct resource rk817_rtc_resources[] = {
+	{
+		.start  = RK817_IRQ_RTC_ALARM,
+		.end    = RK817_IRQ_RTC_ALARM,
 		.flags  = IORESOURCE_IRQ,
 	}
 };
