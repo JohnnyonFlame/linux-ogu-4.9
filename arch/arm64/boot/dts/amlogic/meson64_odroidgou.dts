@@ -17,6 +17,7 @@
 
 /dts-v1/;
 
+//#include "coreelec_g12b.dtsi"
 #include "mesong12b.dtsi"
 #include "meson64_gou_pmic.dtsi"
 #include "meson64_gou_panel.dtsi"
@@ -28,6 +29,19 @@
 	interrupt-parent = <&gic>;
 	#address-cells = <2>;
 	#size-cells = <2>;
+
+	/delete-node/ videosync;
+	/delete-node/ dummy_venc;
+	/delete-node/ video_composer;
+	/delete-node/ meson_uvm;
+	/delete-node/ vcodec_dec;
+	/delete-node/ jpegenc;
+	/delete-node/ gpioleds;
+	/delete-node/ cvbsout;
+	/delete-node/ linux,picdec;
+	/delete-node/ picdec;
+	/delete-node/ multi-di;
+	/delete-node/ vout2;
 
 	chosen { };
 
@@ -80,6 +94,7 @@
 			reg = <0x0 0x05300000 0x0 0x2000000>;
 			no-map;
 		};
+
 		logo_reserved:linux,meson-fb {
 			compatible = "shared-dma-pool";
 			reusable;
@@ -87,17 +102,19 @@
 			alignment = <0x0 0x400000>;
 			alloc-ranges = <0x0 0x3d800000 0x0 0x800000>;
 		};
+
 		ion_cma_reserved:linux,ion-dev {
 			compatible = "shared-dma-pool";
 			reusable;
 			size = <0x0 0x8000000>;
 			alignment = <0x0 0x400000>;
 		};
+
 		ion_fb_reserved:linux,ion-fb {
 			compatible = "amlogic, ion-fb-mem";
 			reusable;
-
-			size = <0x0 0x1c00000>;
+			/* 1920x1080x4x3 round up 4M align */
+			size = <0x0 0x0000000>;
 			alignment = <0x0 0x400000>;
 		};
 
@@ -115,6 +132,7 @@
 			size = <0x0 0x02800000>;
 			alignment = <0x0 0x400000>;
 		};
+
 		/*  POST PROCESS MANAGER */
 		ppmgr_reserved:linux,ppmgr {
 			compatible = "shared-dma-pool";
@@ -130,6 +148,7 @@
 			linux,contiguous-region;
 			clear-map;
 		};
+
 		/* codec shared reserved */
 		codec_mm_reserved:linux,codec_mm_reserved {
 			compatible = "amlogic, codec-mm-reserved";
@@ -618,7 +637,7 @@
 	status = "okay";
 };
 
-&sd_emmc_c {
+&sd_emmc_c { /* emmc */
 	status = "okay";
 	mmc-ddr-1_8v;
 	mmc-hs200-1_8v;
@@ -640,7 +659,7 @@
 	};
 };
 
-&sd_emmc_b {
+&sd_emmc_b { /* sdcard */
 	status = "okay";
 	sd-uhs-sdr25;
 	sd-uhs-sdr50;
