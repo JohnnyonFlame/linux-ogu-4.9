@@ -16,6 +16,8 @@
  */
 
 / {
+	/delete-node/ lcd; /* from mesong12b_skt-panel.dtsi */
+
 	lcd{
 		compatible = "amlogic, lcd-g12b";
 		mode = "tablet";
@@ -87,9 +89,9 @@
 			power_on_step = <0 0 1 1
 					0 0 0 1
 					0 0 1 120
-					2 0 0 0
+					3 0 0 0
 					0xff 0 0 0>;
-			power_off_step = <2 0 0 50
+			power_off_step = <3 0 0 50
 					0 0 0 100
 					0xff 0 0 0>;
 		};
