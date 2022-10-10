@@ -70,6 +70,7 @@ struct fb_dmabuf_export {
 const struct color_bit_define_s *
 _find_color_format(struct fb_var_screeninfo *var);
 
+extern int  soft_cursor(struct fb_info *info, struct fb_cursor *cursor);
 extern phys_addr_t get_fb_rmem_paddr(int index);
 extern void __iomem *get_fb_rmem_vaddr(int index);
 extern size_t get_fb_rmem_size(int index);
