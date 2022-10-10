@@ -1596,6 +1596,7 @@ static int lcd_extern_add_mipi(struct aml_lcd_extern_driver_s *ext_drv)
 {
 	int ret = 0;
 
+	EXTPR("%s: using config->name: %s.\n", __func__, ext_drv->config->name);
 	if ((strcmp(ext_drv->config->name, "mipi_default") == 0) ||
 		(strcmp(ext_drv->config->name, "ext_default") == 0)) {
 		if (ext_drv->config->cmd_size != LCD_EXT_CMD_SIZE_DYNAMIC) {
@@ -2205,13 +2206,15 @@ static int aml_lcd_extern_probe(struct platform_device *pdev)
 
 	ret = lcd_extern_common_get_config();
 	if (ret == 0) {
-		for (i = 0; i < lcd_extern_drv_cnt; i++) {
+		for (i = lcd_extern_drv_cnt; i < EXTERN_MUL_MAX; i++) {
 			extern_config = lcd_extern_get_config_load
 				(lcd_extern_index_lut[i]);
 			if (!extern_config)
 				continue;
 			lcd_extern_add_driver(extern_config,
 					      lcd_extern_index_lut[i]);
+
+			lcd_extern_drv_cnt++;
 		}
 	}
 
